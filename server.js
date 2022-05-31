@@ -11,7 +11,7 @@ const io = new Server(server);
 // Environment
 // ----------------------------------------------------------------------------
 const port = process.env.PORT || 8000;
-const MONGODB_URL = process.env.MONGODB_URL;
+const MONGODB_URL = "mongodb+srv://Fujimaki:Daisy0801@cluster0.aahxt.mongodb.net/?retryWrites=true&w=majority";
 
 // ----------------------------------------------------------------------------
 // Data
@@ -33,7 +33,7 @@ const Users = mongoose.model('User', userSchema);
 const Log = mongoose.model('Log', LogSchema);
 
 const onlineUsers = new Map(); // user id => user
-const hiddenUsers = new Set();
+const hiddenUsers = new Set();//ここに入ると名前が非表示になる
 
 function buildEmitData(u) {
   return { id: u.id, name: u.name, hidden: hiddenUsers.has(u.id) };
@@ -55,7 +55,7 @@ io.on('connection', (socket) => {
     Users.findOneAndUpdate({ name }, {}, { upsert: true, new: true }, (err, u) => {
       console.log(name + ' loggedin.');
       onlineUsers.set(u.id, u);
-      io.emit('UserList', buildUserlist());
+      io.emit('UserList', buildUserlist());//ログインした人の名前表示
 
       socket.on('disconnect', () => {
         console.log(name + ' disconnected.');
@@ -64,16 +64,16 @@ io.on('connection', (socket) => {
       });
 
       socket.on('NoOpinions', (option) => {
-        hiddenUsers.add(u.id);
-      
+        hiddenUsers.add(u.id);//リストに名前を加える
+
         if(option.timeout){
           setTimeout(() => {
-            hiddenUsers.delete(u.id);
+            hiddenUsers.delete(u.id);//リストから名前を削除
             io.emit('ShowName', buildEmitData(u));
           }, 30000);
         }
 
-        io.emit('NoOpinions', buildEmitData(u));
+        io.emit('NoOpinions', buildEmitData(u));//意見ありませんボタンを押した人にだけbuildEmitDataを実行
 
         Log.create({ userName: u.name, action: 'NoOpinions' });
       });
